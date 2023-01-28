@@ -1,0 +1,12 @@
+name: geos-paper-search
+dependencies:
+  - python=3.10
+  - pandas
+  - numpy
+  - pip
+  - pip:
+    - requests
+    - html5lib
+    - bs4
+    - fake-headers
+    - streamlit
