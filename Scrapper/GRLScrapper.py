@@ -2,10 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import urllib.parse as urlparse
-from Base_Scrapper import Base_Scanner
+from BaseScrapper import BaseScrapper
 
 
-class GRL_Scanner(Base_Scanner):
+class GRLScrapper(BaseScrapper):
     """Geophysical Research Letters scanner class
     """
     def __init__(self, url: str) -> None:
@@ -49,7 +49,7 @@ class GRL_Scanner(Base_Scanner):
 
 def main():
     test_url = "https://agupubs.onlinelibrary.wiley.com/toc/19448007/2022/49/8"
-    scanner = GRL_Scanner(test_url)
+    scanner = GRLScrapper(test_url)
     soup = scanner.get_soup()
     scanner.update_title_link(soup)
     scanner.update_authors(soup)

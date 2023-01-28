@@ -2,10 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import urllib.parse as urlparse
-from Base_Scrapper import Base_Scanner
+from BaseScrapper import BaseScrapper
 
 
-class NG_Scanner(Base_Scanner):
+class NGScrapper(BaseScrapper):
     """Nature Geoscience scanner class
     """
     def __init__(self, url: str) -> None:
@@ -86,7 +86,7 @@ class NG_Scanner(Base_Scanner):
 
 def main():
     test_url = "https://www.nature.com/ngeo/volumes/15/issues/4"
-    scanner = NG_Scanner(test_url)
+    scanner = NGScrapper(test_url)
     soup = scanner.get_soup()
     scanner.update_title_link(soup)
     scanner.update_authors(soup)

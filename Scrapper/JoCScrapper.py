@@ -10,10 +10,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import urllib.parse as urlparse
-from Base_Scrapper import Base_Scanner
+from BaseScrapper import BaseScrapper
 
 
-class JoC_Scanner(Base_Scanner):
+class JoCScrapper(BaseScrapper):
     """Journal of Climate scanner class
     """
     def __init__(self, url: str) -> None:
@@ -83,7 +83,7 @@ class JoC_Scanner(Base_Scanner):
 
 def main():
     test_url = "https://journals.ametsoc.org/view/journals/clim/35/8/clim.35.issue-8.xml"
-    scanner = JoC_Scanner(test_url)
+    scanner = JoCScrapper(test_url)
     soup = scanner.get_soup()
     scanner.update_title_link(soup)
     scanner.update_authors(soup)

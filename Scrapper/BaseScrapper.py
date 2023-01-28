@@ -3,14 +3,16 @@ import fake_headers
 from abc import ABC, abstractmethod
 import requests
 
-class Base_Scanner(ABC):
+
+class BaseScrapper(ABC):
     """base class of scanners
 
     Args:
         ABC (class): A helper class that has ABCMeta as its metaclass.
     """
+
     def __init__(self, url: str) -> None:
-        """constructor of JoC_Scanner class
+        """constructor of JoCScrapper class
 
         Args:
             url (str): url of the journal
