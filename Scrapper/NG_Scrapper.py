@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import urllib.parse as urlparse
-from Base_Scanner import Base_Scanner
+from Base_Scrapper import Base_Scanner
 
 
 class NG_Scanner(Base_Scanner):
