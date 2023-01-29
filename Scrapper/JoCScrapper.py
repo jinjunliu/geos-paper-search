@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import json
 import urllib.parse as urlparse
 from BaseScrapper import BaseScrapper
+import time
 
 
 class JoCScrapper(BaseScrapper):
@@ -58,14 +59,14 @@ class JoCScrapper(BaseScrapper):
             author = author.text.replace("\n", "")
             self.papers["papers"][i]["authors"] = author
     
-    def get_abstract(self, link: str) -> str:
+    def get_abstract_date(self, link: str) -> tuple[str, str]:
         """implementation of abstract method
 
         Args:
             link (str): link of the paper
         
         Returns:
-            str: abstract of the paper
+            tuple[str, str]: abstract and date of the paper
         """
         response = requests.get(link, headers=self.headers)
         if response.status_code != 200:
@@ -74,23 +75,32 @@ class JoCScrapper(BaseScrapper):
         soup = BeautifulSoup(text, 'html.parser')
         abstract = soup.find("section", {"class": "abstract"})
         abstract = abstract.text
+        date = soup.find("meta", property="article:published_time")
+        date = date.get("content")
         if abstract.startswith("Abstract"):
             abstract = abstract[8:]
+        # remove the "Significance Statement" part
+        abstract = abstract.split("\nSignificance Statement\n")[0]
         # decode the unicode
         # abstract = abstract.encode("utf-8").decode("utf-8")
-        return abstract
+        return abstract, date
 
 
 def main():
     test_url = "https://journals.ametsoc.org/view/journals/clim/35/8/clim.35.issue-8.xml"
-    scanner = JoCScrapper(test_url)
-    soup = scanner.get_soup()
-    scanner.update_title_link(soup)
-    scanner.update_authors(soup)
-    for paper in scanner.papers["papers"]:
-        paper['abstract'] = scanner.get_abstract(paper['link'])
+    scrapper = JoCScrapper(test_url)
+    soup = scrapper.get_soup()
+    scrapper.update_title_link(soup)
+    scrapper.update_authors(soup)
+    print(scrapper.papers["papers"])
+    for paper in scrapper.papers["papers"]:
+        paper['abstract'], paper['date'] = scrapper.get_abstract_date(paper['link'])
+        print(paper['abstract'])
+        print(paper['date'])
+        # wait for 5 seconds to avoid status code 429 error
+        time.sleep(5)
     with open('../Database/joc_papers_clim.35.issue-8.json', 'w') as f:
-        json.dump(scanner.papers, f, indent=4)
+        json.dump(scrapper.papers, f, indent=4)
 
 
 if __name__ == "__main__":
