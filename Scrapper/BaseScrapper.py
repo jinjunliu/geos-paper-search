@@ -68,13 +68,13 @@ class BaseScrapper(ABC):
         pass
 
     @abstractmethod
-    def get_abstract(self, link: str) -> str:
-        """method to get the abstract of the paper
+    def get_abstract_date(self, link: str) -> tuple[str, str]:
+        """method to get the abstract and date of the paper
 
         Args:
             link (str): link of the paper
         
         Returns:
-            str: abstract of the paper
+            tuple[str, str]: abstract and date of the paper
         """
         pass
