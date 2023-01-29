@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import os
 import re
+from datetime import datetime
+import json
 
 
 st.set_page_config(page_title=None, page_icon=None, layout='centered', initial_sidebar_state='collapsed')
@@ -14,36 +16,19 @@ st.set_page_config(page_title=None, page_icon=None, layout='centered', initial_s
 
 
 def load_data_and_combine():
-    args = {"dtype": {"year": "Int16"}, "usecols": ["title", "authors", "abstract", "url",  "journal", "year"]}
-    df1 = pd.read_csv("Data/papers_b2000.csv", **args)
-    df2 = pd.read_csv("Data/papers_2000s.csv", **args)
-    df3 = pd.read_csv("Data/papers_2010s.csv", **args)
-    df4 = pd.read_csv("Data/papers_recent.csv", **args)
-    df = pd.concat([df1, df2, df3, df4], axis=0)
-    return df
+    with open("Dataset/joc.json", "r") as f:
+        joc_data = json.load(f)
+    return joc_data
 
 
 @st.cache(show_spinner=False)
-def load_data_cached(timestamp):
+def load_data_cached():
     df = load_data_and_combine()
-    df = df[~df.year.isna()]
-    # drop book reviews (not perfect)
-    masks = [~df.title.str.contains(i, case=False, regex=False) for i in ["pp.", " p."]]  # "pages," " pp "
-    mask = np.vstack(masks).all(axis=0)
-    df = df.loc[mask]
-    # remove line breaks in title
-    df.title = df.title.replace(r'\n', ' ', regex=True)
-    # drop some duplicates due to weird strings in authors and abstract
-    df = df[~df.duplicated(['title', 'url']) | df.url.isna()]
-    # replace broken links to None
-    broken_links = ["http://hdl.handle.net/", ]
-    df.loc[df.url.isin(broken_links), "url"] = None
     return df
 
 
-def load_data():
-    update_timestamp = os.path.getmtime("Data/papers_recent.csv")
-    return load_data_cached(update_timestamp)
+def load_db():
+    return load_data_cached()
 
 
 def local_css(file_name):
@@ -64,14 +49,17 @@ def show_papers(df, show_abstract):
 
 def search_keywords(
         button_clicked,
-        df, data_load_state,
-        key_words, journals, year_begin, year_end, sort_mth, max_show,
+        db, data_load_state,
+        key_words, journals, year_begin, month_begin, year_end, month_end, sort_mth, max_show,
         show_abstract, search_author, random_roll):
     if button_clicked:
         data_load_state.markdown('Searching paper...')
 
         # preliminary select on
-        mask_jounral = df.journal.isin(journals)
+        # mask_jounral = db.journal.isin(journals)
+        papers = db['papers']
+        # filter by date
+
         mask_year = (df.year >= year_begin) & (df.year <= year_end)
         dt = df.loc[mask_jounral & mask_year]
         info = dt.title + ' ' + dt.abstract.fillna('')
@@ -252,27 +240,14 @@ def main():
     # alternatively add show abstract here
     # show_abstract = a3.checkbox("show abstract", value=False)
 
-    js = ['aer', 'jpe', 'qje', 'ecta', 'restud',
-          'aejmac', 'aejmic', 'aejapp', 'aejpol', 'aeri',
-          'restat', 'jeea', 'eer', 'ej',
-          'jep', 'jel', 'are',
-          'qe', 'jeg',
-          'jet', 'te', 'joe',
-          'jme', 'red', 'rand', 'jole', 'jhr',
-          'jie', 'ier', 'jpube', 'jde',
-          'jeh', 'ehr', # 'eeh',
-          ]
-    js_ = ["jae","geb","jinde","jlawe","jhe","jebo","ee","ectt","imfer","ecot","jmcb","jue","edcc","sje","ecoa",
-            "jaere","jeem","wber","ieio","jleo","le","jpope","qme","ei","jedc","cej","obes","jems","jes","jmate",
-            "rsue","eedur","jhc","efp","aler","jbes","jru","jpam","jfe",
-            'eeh',
-            ]
+    js = ['joc']
+    js_ = []
     if full_journal:
         js += js_
     js_cats = {"all": js,
-               "top5": ['aer', 'jpe', 'qje', 'ecta', 'restud'],
-               "general": ['aer', 'jpe', 'qje', 'ecta', 'restud', 'aeri', 'restat', 'jeea', 'eer', 'ej', 'qe'],
-               "survey": ['jep', 'jel', 'are', ]
+               "top5": js,
+               "general": js,
+               "survey": js
                }
     js_cats_keys = list(js_cats.keys())
     journals = form.multiselect("Journals",
@@ -285,21 +260,23 @@ def main():
         journals = set(journals)
 
     year_min = 1900
-    year_max = 2023
+    year_max = datetime.now().year
 
-    c1, c2, c3, c4 = form.columns(4)
+    c1, c2, c3, c4, c5, c6 = form.columns(6)
     year_begin = c1.number_input('Year from', value=1980, min_value=year_min, max_value=year_max)
-    year_end = c2.number_input('Year to', value=year_max, min_value=year_min, max_value=year_max)
-    sort_mth = c3.selectbox('Sort by', ['Most recent', 'Most early'], index=0)  # 'Most cited'
-    max_show = c4.number_input('Max. Shown', value=100, min_value=0, max_value=500)
+    month_begin = c2.number_input('Month from', value=1, min_value=1, max_value=12)
+    year_end = c3.number_input('Year to', value=year_max, min_value=year_min, max_value=year_max)
+    month_end = c4.number_input('Month to', value=12, min_value=1, max_value=12)
+    sort_mth = c5.selectbox('Sort by', ['Most recent', 'Most early'], index=0)  # 'Most cited'
+    max_show = c6.number_input('Max. Shown', value=100, min_value=0, max_value=500)
 
     data_load_state = st.empty()
 
-    df = load_data()
+    db = load_db()
 
     search_keywords(button_clicked,
-                    df, data_load_state,
-                    key_words, journals, year_begin, year_end, sort_mth, max_show,
+                    db, data_load_state,
+                    key_words, journals, year_begin, month_begin, year_end, month_end, sort_mth, max_show,
                     show_abstract, search_author, random_roll)
 
 
